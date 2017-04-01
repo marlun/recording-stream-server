@@ -1,22 +1,12 @@
+var io = require('socket.io').listen(3000)
+var ss = require('socket.io-stream')
 var fs = require('fs')
-var http = require('http')
-var shortid = require('shortid')
+var path = require('path');
 
-http.createServer(function (req, res) {
-  console.log(req.method + ' RETRIEVED')
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
-  if (req.method === 'POST') {
-    var filename = shortid() + '.ogg'
+io.of('/recording').on('connection', function (socket) {
+  ss(socket).on('new', function (stream, data) {
+    var filename = path.basename(data.name)
     console.log('Saving recording to ' + filename)
-    var fileStream = fs.createWriteStream(filename)
-    req.pipe(fileStream)
-    req.on('end', function () {
-      res.end()
-    })
-  } else {
-    res.writeHead(200, 'OK')
-    res.end()
-  }
-}).listen(3000)
+    stream.pipe(fs.createWriteStream(filename))
+  })
+})
